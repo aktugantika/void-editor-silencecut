@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>SilenceCut</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+    <!-- Processing overlay -->
+    <div id="processing-overlay" class="processing-overlay hidden">
+        <div class="processing-box">
+            <div class="processing-spinner"></div>
+            <div class="processing-text">Processing</div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="plugin-header">
+        <div class="plugin-logo">✂</div>
+        <span class="plugin-title">SilenceCut</span>
+        <span class="plugin-version">v1.0.10</span>
+
+        <!-- Üst menü -->
+        <nav class="top-menu">
+
+    <!-- Presets -->
+            <div class="menu-item" id="menu-presets">
+                <span class="menu-label">Presets</span>
+                <div class="menu-dropdown">
+                    <div class="dropdown-item" onclick="applyPreset('podcast')">🎙 Podcast</div>
+                    <div class="dropdown-item" onclick="applyPreset('interview')">🎤 Interview</div>
+                    <div class="dropdown-item" onclick="applyPreset('lecture')">📚 Lecture</div>
+                    <div class="dropdown-item" onclick="applyPreset('vlog')">🎬 Vlog</div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="menu-item" id="menu-settings">
+                <span class="menu-label">Settings</span>
+                <div class="menu-dropdown">
+                    <div class="dropdown-item dropdown-toggle-item">
+                        <span>Sound Effects</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-sound" checked onchange="toggleSound(this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help -->
+            <div class="menu-item" id="menu-help">
+                <span class="menu-label">Help</span>
+                <div class="menu-dropdown">
+                    <div class="dropdown-section-title">How to use</div>
+                    <div class="dropdown-text">1. Place a linked video+audio clip on V1/A1 or choose a diffirent cut mode.</div>
+                    <div class="dropdown-text">2. Adjust settings or pick a preset.</div>
+                    <div class="dropdown-text">3. Click Generate Preview to visualize cuts.</div>
+                    <div class="dropdown-text">4. Click Run SilenceCut to apply.</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-text">🖱 Scroll on waveform to zoom.</div>
+                    <div class="dropdown-text">🖱 Drag waveform to pan.</div>
+                    <div class="dropdown-text">🖱 Double-click to reset zoom.</div>
+                </div>
+            </div>
+
+            <!-- Changelog -->
+            <div class="menu-item" id="menu-changelog">
+                <span class="menu-label">Changelog</span>
+                <div class="menu-dropdown menu-dropdown-right">
+                    <div class="dropdown-section-title">v1.0.10 — Current</div>
+                    <div class="dropdown-text">+ Preset system</div>
+                    <div class="dropdown-text">+ Top menu bar</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-text">+ Waveform zoom & pan</div>
+                    <div class="dropdown-text">+ Sound effects</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-text">+ Waveform visualizer</div>
+                    <div class="dropdown-text">+ Settings persistence</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-text">+ Generate Preview</div>
+                    <div class="dropdown-text">+ Timeline markers</div>
+                    <div class="dropdown-text">Initial release</div>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="menu-item" id="menu-about">
+                <span class="menu-label">About</span>
+                <div class="menu-dropdown menu-dropdown-right">
+                    <div class="dropdown-about-logo">✂</div>
+                    <div class="dropdown-about-title">Void Editor — SilenceCut</div>
+                    <div class="dropdown-about-version">Version 1.0.10</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-text">Developed by <strong>Aktuğ Antika</strong></div>
+                    <div class="dropdown-text">Part of the Void Editor suite. For more information: aktugantika@gmail.com</div>
+                    <div class="dropdown-text"></div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-text" style="color: var(--muted)">© 2026 Aktuğ Antika</div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Edit Mode -->
+    <div class="preset-row">
+        <div class="preset-label">Edit Mode</div>
+        <select id="edit-mode-select" onchange="saveEditMode(this.value)">
+            <option value="linked">🔗 Linked Pair</option>
+            <option value="track">🎞 Track Based</option>
+            <option value="audio">🎵 Audio Only</option>
+            <option value="all">⚡ All Tracks</option>
+        </select>
+    </div>
+
+    <!-- Presets -->
+    <div class="preset-row">
+        <div class="preset-label">Preset</div>
+        <select id="preset-select" onchange="applyPreset(this.value)">
+            <option value="">— Custom —</option>
+            <option value="podcast">🎙 Podcast</option>
+            <option value="interview">🎤 Interview</option>
+            <option value="lecture">📚 Lecture</option>
+            <option value="vlog">🎬 Vlog</option>
+        </select>
+    </div>
+
+    <!-- Settings -->
+    <div class="section-label">Settings</div>
+
+    <div class="optionwrapper">
+        <div class="headingdiv"><h4>Cutoff</h4></div>
+        <div class="jumpcutoption">
+            <input type="range" id="silenceCutoff" min="-100" max="-1" value="-50">
+            <input type="number" class="number-input" min="-100" max="-1" value="-50">
+            <h4>dB</h4>
+            <button id="btn-auto-detect" onclick="runAutoDetect()" title="Auto detect threshold">⚡</button>
+        </div>
+    </div>
+
+    <div class="optionwrapper">
+        <div class="headingdiv"><h4>Min Silence Length</h4></div>
+        <div class="jumpcutoption">
+            <input type="range" id="removeOver" min="0.1" max="2" value="0.5" step="0.1">
+            <input type="number" class="number-input" min="0.1" value="0.5">
+            <h4>sec</h4>
+        </div>
+    </div>
+
+    <div class="optionwrapper">
+        <div class="headingdiv"><h4>Min Segment Length</h4></div>
+        <div class="jumpcutoption">
+            <input type="range" id="keepOver" min="0.1" max="2" value="0.5" step="0.1">
+            <input type="number" class="number-input" min="0.1" value="0.5">
+            <h4>sec</h4>
+        </div>
+    </div>
+
+    <div class="optionwrapper">
+        <div class="headingdiv"><h4>Padding</h4></div>
+        <div class="jumpcutoption">
+            <input type="range" id="padding" min="0.1" max="2" value="0.5" step="0.1">
+            <input type="number" class="number-input" min="0.1" value="0.5">
+            <h4>sec</h4>
+        </div>
+    </div>
+
+    <div class="backup-row">
+        <button id="backupBtn" class="backup-toggle" onclick="toggleBackup()" aria-pressed="false">
+            <span class="backup-icon">⎘</span>
+            <span class="backup-label">Backup sequence</span>
+        </button>
+    </div>
+
+    <button id="jumpcutbutton" onclick="runJumpCut()">✂ Run SilenceCut</button>
+
+    <!-- Generate Preview -->
+    <div id="preview-section">
+
+        <div class="section-divider"><span>Generate Preview</span></div>
+
+        <div class="preview-buttons">
+            <button id="btn-generate-preview" onclick="runGeneratePreview()">
+                ▶ Generate Preview
+            </button>
+            <button id="btn-clear-preview" onclick="runClearPreviewMarkers()" disabled>
+                ✕ Clear
+            </button>
+        </div>
+
+        <div id="preview-status" class="preview-status hidden"></div>
+
+        <div id="waveform-container" class="hidden">
+            <canvas id="waveform-canvas" width="700" height="80"></canvas>
+            <div class="waveform-legend">
+                <div class="legend-item">
+                    <div class="legend-dot keep"></div>
+                    <span>Keep</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot cut"></div>
+                    <span>Cut</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="preview-stats" class="preview-stats hidden">
+            <div class="stat-item">
+                <span class="stat-label">Cuts</span>
+                <span class="stat-value" id="stat-cut-count">—</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Silence</span>
+                <span class="stat-value" id="stat-total-silence">—</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Saved</span>
+                <span class="stat-value" id="stat-save-pct">—</span>
+            </div>
+        </div>
+
+        <div id="preview-list-container" class="hidden">
+            <div class="list-header">
+                <span>Silent Regions</span>
+                <span id="list-count" class="list-count"></span>
+            </div>
+            <div id="preview-list" class="preview-list"></div>
+        </div>
+
+    </div>
+
+    <script type="text/javascript" src="CSInterface.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+</body>
+</html>
