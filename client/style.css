@@ -787,3 +787,8 @@ input[type="checkbox"] {
     cursor: pointer;
 }
 .support-modal-box button:hover { color: var(--text); }
+
+.menu-dropdown.dropdown-left {
+    right: 0;
+    left: auto;
+}
