@@ -18,7 +18,7 @@ if (operating_system == "WIN") {
 } else {
   EXE_NAME = "VoidEditor";
 }
-var EXE_PATH = path.join(path.normalize(csInterface.getSystemPath(SystemPath.EXTENSION)), "/dist/" + EXE_NAME);
+var EXE_PATH = path.join(path.normalize(csInterface.getSystemPath(SystemPath.EXTENSION)), "/source/" + EXE_NAME);
 
 async function init() {
   operating_system = await getOS();
@@ -171,7 +171,7 @@ async function runGeneratePreview() {
       totalSilenceOverride  = segments.reduce(function(a,s){ return a+(s[1]-s[0]); }, 0);
       clipStartForMarkers   = 0;
       if (allWaveformDatas.length > 0 && totalDur > 0 && waveformContainer) {
-        const mwf = mergeWaveforms(allWaveformDatas, totalDur, 600);
+        const mwf = mergeWaveforms(allWaveformDatas, totalDur, 2000);
         if (mwf) { initWaveform(mwf.waveform, segments, totalDur, 0, mwf.silenceMask); waveformContainer.classList.remove("hidden"); }
       }
 
@@ -187,7 +187,7 @@ async function runGeneratePreview() {
       totalSilenceOverride  = segments.reduce(function(a,s){ return a+(s[1]-s[0]); }, 0);
       clipStartForMarkers   = 0;
       if (allWaveformDatas.length > 0 && totalDur > 0 && waveformContainer) {
-        const mwf = mergeWaveforms(allWaveformDatas, totalDur, 600);
+        const mwf = mergeWaveforms(allWaveformDatas, totalDur, 2000);
         if (mwf) { initWaveform(mwf.waveform, segments, totalDur, 0, mwf.silenceMask); waveformContainer.classList.remove("hidden"); }
       }
 
