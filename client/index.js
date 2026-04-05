@@ -976,3 +976,11 @@ if (document.readyState === 'loading') {
 } else {
   initMenu();
 }
+
+function openLink(url) {
+    if (typeof cep !== 'undefined' && cep.util) {
+        cep.util.openURLInDefaultBrowser(url);
+    } else {
+        require('child_process').exec('start ' + url);
+    }
+}
