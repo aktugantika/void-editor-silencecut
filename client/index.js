@@ -723,7 +723,7 @@ function playSound(type) {
       osc.stop(ctx.currentTime + i * 0.12 + 0.15);
     });
 
-  } else if (type === 'done') {
+    } else if (type === 'done') {
     // Üç ton yukarı çıkış — "tamamlandı"
     [440, 550, 660].forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -737,6 +737,10 @@ function playSound(type) {
       osc.start(ctx.currentTime + i * 0.13);
       osc.stop(ctx.currentTime + i * 0.13 + 0.2);
     });
+    setTimeout(function() {
+      var modal = document.getElementById('support-modal');
+      if (modal) modal.classList.remove('hidden');
+    }, 800);
   }
 }
 
