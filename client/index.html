@@ -131,7 +131,7 @@
 
     <div class="optionwrapper">
         <div class="headingdiv"><h4>Cutoff</h4></div>
-        <div class="jumpcutoption">
+        <div class="silencecutoption">
             <input type="range" id="silenceCutoff" min="-100" max="-1" value="-50">
             <input type="number" class="number-input" min="-100" max="-1" value="-50">
             <h4>dB</h4>
@@ -141,7 +141,7 @@
 
     <div class="optionwrapper">
         <div class="headingdiv"><h4>Min Silence Length</h4></div>
-        <div class="jumpcutoption">
+        <div class="silencecutoption">
             <input type="range" id="removeOver" min="0.1" max="2" value="0.5" step="0.1">
             <input type="number" class="number-input" min="0.1" value="0.5">
             <h4>sec</h4>
@@ -150,7 +150,7 @@
 
     <div class="optionwrapper">
         <div class="headingdiv"><h4>Min Segment Length</h4></div>
-        <div class="jumpcutoption">
+        <div class="silencecutoption">
             <input type="range" id="keepOver" min="0.1" max="2" value="0.5" step="0.1">
             <input type="number" class="number-input" min="0.1" value="0.5">
             <h4>sec</h4>
@@ -159,7 +159,7 @@
 
     <div class="optionwrapper">
         <div class="headingdiv"><h4>Padding</h4></div>
-        <div class="jumpcutoption">
+        <div class="silencecutoption">
             <input type="range" id="padding" min="0.1" max="2" value="0.5" step="0.1">
             <input type="number" class="number-input" min="0.1" value="0.5">
             <h4>sec</h4>
@@ -173,7 +173,7 @@
         </button>
     </div>
 
-    <button id="jumpcutbutton" onclick="runJumpCut()">✂ Run SilenceCut</button>
+    <button id="silencecutbutton" onclick="runSilenceCut()">✂ Run SilenceCut</button>
 
     <!-- Generate Preview -->
     <div id="preview-section">

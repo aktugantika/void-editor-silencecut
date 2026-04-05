@@ -1,13 +1,13 @@
 // ─────────────────────────────────────────────────────────────────
-// Void Editor — SilenceCut
+// Void Editor — silencecut
 // Author: Aktuğ Antika
 // ─────────────────────────────────────────────────────────────────
 
-function jumpCutActiveSequence(silences, backup) {
-    jumpCutWithMode(silences, backup, "linked");
+function silenceCutActiveSequence(silences, backup) {
+    silenceCutWithMode(silences, backup, "linked");
 }
 
-function jumpCutWithMode(silences, backup, editMode) {
+function silenceCutWithMode(silences, backup, editMode) {
 
     app.enableQE();
 

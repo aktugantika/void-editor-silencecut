@@ -112,7 +112,7 @@ body {
   font-family: var(--mono);
 }
 
-.jumpcutoption {
+.silencecutoption {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -247,7 +247,7 @@ input[type="checkbox"] {
 }
 
 /* ── Run Jump Cut button ── */
-#jumpcutbutton {
+#silencecutbutton {
   width: 100%;
   padding: 10px;
   background: var(--accent);
@@ -263,8 +263,8 @@ input[type="checkbox"] {
   margin: 0 0 4px 0;
 }
 
-#jumpcutbutton:hover  { background: #e03030; }
-#jumpcutbutton:active { transform: scale(0.99); }
+#silencecutbutton:hover  { background: #e03030; }
+#silencecutbutton:active { transform: scale(0.99); }
 
 /* ── Section divider ── */
 .section-divider {

@@ -27,7 +27,7 @@ async function init() {
 // ─────────────────────────────────────────────────────────────────
 // Run Jump Cut
 // ─────────────────────────────────────────────────────────────────
-async function runJumpCut() {
+async function runSilenceCut() {
   playSound('start');
   showOverlay();
   var isValid = await checkTimelineValidity();
@@ -58,7 +58,7 @@ async function runJumpCut() {
     }
     const merged = mergeSilences(allSilences);
     if (merged.length === 0) { alert("Sessizlik Algılanmadı."); return; }
-    try { await runPremiereJumpCut(JSON.stringify(merged.concat([0])), checked); playSound('done'); }
+    try { await runPremiereSilenceCut(JSON.stringify(merged.concat([0])), checked); playSound('done'); }
     catch(e) { alert("Failure executing jump cuts in Premiere: " + e); }
     finally { hideOverlay(); }
 
@@ -80,27 +80,27 @@ async function runJumpCut() {
     }
     const merged = mergeSilences(allSilences);
     if (merged.length === 0) { alert("Sessizlik Algılanmadı."); return; }
-    try { await runPremiereJumpCut(JSON.stringify(merged.concat([0])), checked); playSound('done'); }
+    try { await runPremiereSilenceCut(JSON.stringify(merged.concat([0])), checked); playSound('done'); }
     catch(e) { alert("Failure executing jump cuts in Premiere: " + e); }
     finally { hideOverlay(); }
 
   } else {
     let mediaPath = await asyncGetMediaPath();
-    let jumpcutParams = getJumpcutParams();
+    let silencecutParams = getJumpcutParams();
     let inoutpoints = JSON.parse(await asyncGetInOutStartPoints());
-    jumpcutParams = JSON.parse(jumpcutParams);
-    jumpcutParams["in"] = inoutpoints["in"];
-    jumpcutParams["out"] = inoutpoints["out"];
-    jumpcutParams["start"] = inoutpoints["start"];
-    jumpcutParams = JSON.stringify(jumpcutParams);
-    let jumpcutData = "";
-    try { jumpcutData = await asyncCallPythonJumpcut(EXE_PATH, mediaPath, jumpcutParams); }
+    silencecutParams = JSON.parse(silencecutParams);
+    silencecutParams["in"] = inoutpoints["in"];
+    silencecutParams["out"] = inoutpoints["out"];
+    silencecutParams["start"] = inoutpoints["start"];
+    silencecutParams = JSON.stringify(silencecutParams);
+    let silencecutData = "";
+    try { silencecutData = await asyncCallPythonJumpcut(EXE_PATH, mediaPath, silencecutParams); }
     catch (error) { alert("Failure executing Python script: " + error); return; }
     let dataJSON = "";
-    try { dataJSON = JSON.parse(jumpcutData); }
+    try { dataJSON = JSON.parse(silencecutData); }
     catch (error) { alert(error); return; }
     if (dataJSON['silences'].length === 0) { alert("Sessizlik Algılanmadı."); return; }
-    try { await runPremiereJumpCut(JSON.stringify(dataJSON['silences']), checked); playSound('done'); }
+    try { await runPremiereSilenceCut(JSON.stringify(dataJSON['silences']), checked); playSound('done'); }
     catch (error) { alert("Failure executing jump cuts in Premiere." + error); }
     finally { hideOverlay(); }
   }
@@ -194,8 +194,8 @@ async function runGeneratePreview() {
     } else {
       const mediaPath = await asyncGetMediaPath();
       const inout = JSON.parse(await asyncGetInOutStartPoints());
-      const jumpcutParamsRaw = JSON.parse(getJumpcutParams());
-      const previewParams = JSON.stringify({ silenceCutoff: jumpcutParamsRaw.silenceCutoff, removeOver: jumpcutParamsRaw.removeOver, keepOver: jumpcutParamsRaw.keepOver, padding: jumpcutParamsRaw.padding, "in": inout["in"], "out": inout["out"], "start": inout["start"], preview: true });
+      const silencecutParamsRaw = JSON.parse(getJumpcutParams());
+      const previewParams = JSON.stringify({ silenceCutoff: silencecutParamsRaw.silenceCutoff, removeOver: silencecutParamsRaw.removeOver, keepOver: silencecutParamsRaw.keepOver, padding: silencecutParamsRaw.padding, "in": inout["in"], "out": inout["out"], "start": inout["start"], preview: true });
       const rawOutput = await asyncCallPythonPreview(EXE_PATH, mediaPath, previewParams);
       let data;
       try { data = JSON.parse(rawOutput); }
@@ -530,10 +530,10 @@ function formatTime(seconds) {
 // ─────────────────────────────────────────────────────────────────
 // Mevcut fonksiyonlar
 // ─────────────────────────────────────────────────────────────────
-async function runPremiereJumpCut(silences, backup) {
+async function runPremiereSilenceCut(silences, backup) {
   const mode = getEditMode();
   return new Promise((resolve, reject) => {
-    csInterface.evalScript(`jumpCutWithMode("${silences}", "${backup}", "${mode}")`, (result) => {
+    csInterface.evalScript(`silenceCutWithMode("${silences}", "${backup}", "${mode}")`, (result) => {
       if (result) resolve(result);
       else reject("Error executing jump cuts.");
     });
@@ -631,7 +631,7 @@ function mergeWaveforms(clipDatas, totalDuration, targetBars) {
   return { waveform, silenceMask };
 }
 
-async function asyncCallPythonJumpcut(exe_path, media_path, jumpcutParams) {
+async function asyncCallPythonJumpcut(exe_path, media_path, silencecutParams) {
   return new Promise((resolve, reject) => {
     exe_path   = path.normalize(exe_path);
     media_path = path.normalize(media_path);
@@ -639,7 +639,7 @@ async function asyncCallPythonJumpcut(exe_path, media_path, jumpcutParams) {
 
     let command_prompt;
     try {
-      command_prompt = child_process.spawn(exe_path, [media_path, jumpcutParams], { cwd });
+      command_prompt = child_process.spawn(exe_path, [media_path, silencecutParams], { cwd });
     } catch (error) {
       alert(error);
     }
@@ -675,7 +675,7 @@ function initFrontend() {
       let slider = document.getElementById(id);
       let numberInput = slider.nextElementSibling;
 
-      let saved = localStorage.getItem('jumpcut_' + id);
+      let saved = localStorage.getItem('silencecut_' + id);
       if (saved !== null) {
         slider.value = saved;
         numberInput.value = saved;
@@ -683,12 +683,12 @@ function initFrontend() {
 
       slider.oninput = function() {
         numberInput.value = slider.value;
-        localStorage.setItem('jumpcut_' + id, slider.value);
+        localStorage.setItem('silencecut_' + id, slider.value);
       };
 
       numberInput.oninput = function() {
         slider.value = numberInput.value;
-        localStorage.setItem('jumpcut_' + id, numberInput.value);
+        localStorage.setItem('silencecut_' + id, numberInput.value);
       };
     });
   });
@@ -696,13 +696,13 @@ function initFrontend() {
 
 function getJumpcutParams() {
   let sliderIds = ['silenceCutoff', 'removeOver', 'keepOver', 'padding'];
-  let jumpcutParams = {};
+  let silencecutParams = {};
   sliderIds.forEach(function(id) {
     let slider = document.getElementById(id);
     let numberInput = slider.nextElementSibling;
-    jumpcutParams[id] = numberInput.value;
+    silencecutParams[id] = numberInput.value;
   });
-  return JSON.stringify(jumpcutParams);
+  return JSON.stringify(silencecutParams);
 }
 function playSound(type) {
   if (!soundEnabled) return;
@@ -783,15 +783,15 @@ function applyPreset(presetName) {
 
     slider.value      = preset[key];
     if (numberInput) numberInput.value = preset[key];
-    localStorage.setItem('jumpcut_' + key, preset[key]);
+    localStorage.setItem('silencecut_' + key, preset[key]);
   });
 
-  localStorage.setItem('jumpcut_preset', presetName);
+  localStorage.setItem('silencecut_preset', presetName);
 }
 
 // Sayfa yüklenince son preset'i geri yükle
 document.addEventListener('DOMContentLoaded', function() {
-  const savedPreset = localStorage.getItem('jumpcut_preset');
+  const savedPreset = localStorage.getItem('silencecut_preset');
   if (savedPreset) {
     const select = document.getElementById('preset-select');
     if (select) select.value = savedPreset;
@@ -807,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const select = document.getElementById('preset-select');
       if (select && select.value !== '') {
         select.value = '';
-        localStorage.removeItem('jumpcut_preset');
+        localStorage.removeItem('silencecut_preset');
       }
     }
 
@@ -889,10 +889,10 @@ async function runAutoDetect() {
 
       if (slider) slider.value = val;
       if (input)  input.value  = val;
-      localStorage.setItem('jumpcut_silenceCutoff', val);
+      localStorage.setItem('silencecut_silenceCutoff', val);
 
       const select = document.getElementById('preset-select');
-      if (select) { select.value = ''; localStorage.removeItem('jumpcut_preset'); }
+      if (select) { select.value = ''; localStorage.removeItem('silencecut_preset'); }
 
       btn.textContent = "✓";
       setTimeout(() => { btn.textContent = "⚡"; }, 2000);
