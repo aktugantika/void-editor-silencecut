@@ -738,6 +738,7 @@ function playSound(type) {
       osc.stop(ctx.currentTime + i * 0.13 + 0.2);
     });
     setTimeout(function() {
+      csInterface.evalScript("clearPreviewMarkers()");
       var modal = document.getElementById('support-modal');
       if (modal) modal.classList.remove('hidden');
     }, 800);
