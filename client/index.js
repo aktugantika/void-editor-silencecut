@@ -985,3 +985,151 @@ function openLink(url) {
         require('child_process').exec('start ' + url);
     }
 }
+
+function restoreDefaults() {
+    localStorage.clear();
+    location.reload();
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Custom Preset Save / Delete / Load
+// ─────────────────────────────────────────────────────────────────
+function getCustomPresets() {
+  try {
+    return JSON.parse(localStorage.getItem('silencecut_custom_presets') || '{}');
+  } catch(e) {
+    return {};
+  }
+}
+
+function saveCustomPresets(presets) {
+  localStorage.setItem('silencecut_custom_presets', JSON.stringify(presets));
+}
+
+function saveCustomPreset() {
+  var name = prompt('Preset name:');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+
+  var key = 'custom_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  var presets = getCustomPresets();
+
+  presets[key] = {
+    label: name,
+    silenceCutoff: parseFloat(document.getElementById('silenceCutoff').value),
+    removeOver:    parseFloat(document.getElementById('removeOver').value),
+    keepOver:      parseFloat(document.getElementById('keepOver').value),
+    padding:       parseFloat(document.getElementById('padding').value)
+  };
+
+  saveCustomPresets(presets);
+  rebuildPresetDropdown();
+
+  var select = document.getElementById('preset-select');
+  if (select) select.value = key;
+  localStorage.setItem('silencecut_preset', key);
+  updateDeleteButton();
+}
+
+function deleteCustomPreset() {
+  var select = document.getElementById('preset-select');
+  if (!select) return;
+  var key = select.value;
+  if (!key.startsWith('custom_')) return;
+
+  var presets = getCustomPresets();
+  var label = presets[key] ? presets[key].label : key;
+  if (!confirm('Delete preset "' + label + '"?')) return;
+
+  delete presets[key];
+  saveCustomPresets(presets);
+  rebuildPresetDropdown();
+  select.value = '';
+  localStorage.removeItem('silencecut_preset');
+  updateDeleteButton();
+}
+
+function rebuildPresetDropdown() {
+  var select = document.getElementById('preset-select');
+  if (!select) return;
+
+  select.innerHTML = '';
+
+  var custom = document.createElement('option');
+  custom.value = '';
+  custom.textContent = '— Custom —';
+  select.appendChild(custom);
+
+  var builtIn = [
+    { value: 'podcast',   label: '🎙 Podcast' },
+    { value: 'interview', label: '📝 Interview' },
+    { value: 'lecture',   label: '📕 Lecture' },
+    { value: 'vlog',      label: '🎬 Vlog' }
+  ];
+
+  builtIn.forEach(function(p) {
+    var opt = document.createElement('option');
+    opt.value = p.value;
+    opt.textContent = p.label;
+    select.appendChild(opt);
+  });
+
+  var presets = getCustomPresets();
+  var keys = Object.keys(presets);
+  if (keys.length > 0) {
+    var sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '── Saved ──';
+    select.appendChild(sep);
+
+    keys.forEach(function(key) {
+      var opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = '⭐ ' + presets[key].label;
+      select.appendChild(opt);
+    });
+  }
+}
+
+function updateDeleteButton() {
+  var select = document.getElementById('preset-select');
+  var btn = document.getElementById('btn-delete-preset');
+  if (!select || !btn) return;
+  if (select.value.startsWith('custom_')) {
+    btn.classList.remove('hidden');
+  } else {
+    btn.classList.add('hidden');
+  }
+}
+
+var _originalApplyPreset = applyPreset;
+applyPreset = function(presetName) {
+  if (presetName && presetName.startsWith('custom_')) {
+    var presets = getCustomPresets();
+    if (presets[presetName]) {
+      var p = presets[presetName];
+      ['silenceCutoff', 'removeOver', 'keepOver', 'padding'].forEach(function(key) {
+        var slider = document.getElementById(key);
+        var numberInput = slider ? slider.nextElementSibling : null;
+        if (!slider) return;
+        slider.value = p[key];
+        if (numberInput) numberInput.value = p[key];
+        localStorage.setItem('silencecut_' + key, p[key]);
+      });
+      localStorage.setItem('silencecut_preset', presetName);
+    }
+  } else {
+    _originalApplyPreset(presetName);
+  }
+  updateDeleteButton();
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  rebuildPresetDropdown();
+  var saved = localStorage.getItem('silencecut_preset');
+  if (saved) {
+    var select = document.getElementById('preset-select');
+    if (select) select.value = saved;
+  }
+  updateDeleteButton();
+});

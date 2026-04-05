@@ -792,3 +792,27 @@ input[type="checkbox"] {
     right: 0;
     left: auto;
 }
+
+/* ─── Custom Preset Buttons ─── */
+.preset-save-btn,
+.preset-delete-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.preset-save-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.preset-delete-btn:hover {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}

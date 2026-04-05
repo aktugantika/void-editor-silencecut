@@ -39,13 +39,9 @@
             <div class="menu-item" id="menu-settings">
                 <span class="menu-label">Settings</span>
                 <div class="menu-dropdown">
-                    <div class="dropdown-item dropdown-toggle-item">
-                        <span>Sound Effects</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="toggle-sound" checked onchange="toggleSound(this.checked)">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+                    <div class="dropdown-item" onclick="restoreDefaults()" style="cursor:pointer;">
+            			<span>⟲ Restore Defaults</span>
+        			</div>
                 </div>
             </div>
 
@@ -123,6 +119,8 @@
             <option value="lecture">📚 Lecture</option>
             <option value="vlog">🎬 Vlog</option>
         </select>
+        <button class="preset-save-btn" onclick="saveCustomPreset()" title="Save current settings as preset">💾</button>
+        <button class="preset-delete-btn hidden" id="btn-delete-preset" onclick="deleteCustomPreset()" title="Delete this preset">🗑</button>
     </div>
 
     <!-- Settings -->
