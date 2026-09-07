@@ -206,8 +206,14 @@ function getNonEmptyTrackItems(type, SEQUENCE, VIDEO_TRACK, AUDIO_TRACK) {
 function getMediaPath() {
     var sequence = app.project.activeSequence;
     var track1 = sequence.videoTracks[0];
-    clip = track1.clips[0];
-    return clip.projectItem.getMediaPath();
+    var videoClip = track1.clips[0];
+    var linkedItems = videoClip.getLinkedItems();
+    for (var i = 0; i < linkedItems.length; i++) {
+        if (linkedItems[i] && linkedItems[i].mediaType === "Audio") {
+            return linkedItems[i].projectItem.getMediaPath();
+        }
+    }
+    return videoClip.projectItem.getMediaPath();
 }
 
 function getMediaPathAudio() {
@@ -228,27 +234,48 @@ function getInOutStartPointsAudio() {
 
 function checkTrackBasedValidity() {
     var seq = app.project.activeSequence;
-    if (!seq) return false;
-    if (seq.audioTracks[0].clips.length === 0) return false;
-    return true;
+    if (!seq || !seq.audioTracks || seq.audioTracks.numTracks === 0) return false;
+    for (var at = 0; at < seq.audioTracks.numTracks; at++) {
+        if (seq.audioTracks[at].clips.length > 0) return true;
+    }
+    return false;
 }
 
 function checkAudioOnlyValidity() {
     var seq = app.project.activeSequence;
-    if (!seq) return false;
-    if (seq.audioTracks[0].clips.length === 0) return false;
-    return true;
+    if (!seq || !seq.audioTracks || seq.audioTracks.numTracks === 0) return false;
+    for (var at = 0; at < seq.audioTracks.numTracks; at++) {
+        if (seq.audioTracks[at].clips.length > 0) return true;
+    }
+    return false;
 }
 
 function checkAllTracksValidity() {
     var seq = app.project.activeSequence;
     if (!seq) return false;
-    if (seq.audioTracks[0].clips.length === 0) return false;
-    return true;
+    if (seq.videoTracks && seq.videoTracks.numTracks > 0) {
+        for (var vt = 0; vt < seq.videoTracks.numTracks; vt++) {
+            if (seq.videoTracks[vt].clips.length > 0) return true;
+        }
+    }
+    if (seq.audioTracks && seq.audioTracks.numTracks > 0) {
+        for (var at = 0; at < seq.audioTracks.numTracks; at++) {
+            if (seq.audioTracks[at].clips.length > 0) return true;
+        }
+    }
+    return false;
 }
 
 function getInOutStartPoints() {
-    var clip = app.project.activeSequence.videoTracks[0].clips[0];
+    var videoClip = app.project.activeSequence.videoTracks[0].clips[0];
+    var clip = videoClip;
+    var linkedItems = videoClip.getLinkedItems();
+    for (var i = 0; i < linkedItems.length; i++) {
+        if (linkedItems[i] && linkedItems[i].mediaType === "Audio") {
+            clip = linkedItems[i];
+            break;
+        }
+    }
     var inPoint  = clip.inPoint.seconds;
     var outPoint = clip.outPoint.seconds;
     var start    = clip.start.seconds;
@@ -257,7 +284,9 @@ function getInOutStartPoints() {
 }
 
 function getAllTracksClipInfo() {
+    try {
     var seq = app.project.activeSequence;
+    if (!seq) return JSON.stringify({ error: "Aktif sequence bulunamadı." });
     var clips = [];
     var vt, at, ci, clip, info, k, exists;
 
@@ -306,10 +335,15 @@ function getAllTracksClipInfo() {
         }
     }
     return JSON.stringify(clips);
+    } catch (e) {
+        return JSON.stringify({ error: "getAllTracksClipInfo: " + e.toString() });
+    }
 }
 
 function getAllAudioClipInfo() {
+    try {
     var seq = app.project.activeSequence;
+    if (!seq) return JSON.stringify({ error: "Aktif sequence bulunamadı." });
     var clips = [];
     var at, ci, clip, info, k, exists;
 
@@ -336,6 +370,9 @@ function getAllAudioClipInfo() {
         }
     }
     return JSON.stringify(clips);
+    } catch (e) {
+        return JSON.stringify({ error: "getAllAudioClipInfo: " + e.toString() });
+    }
 }
 function checkOneLinkedClipPair() {
     if (app.project.activeSequence.videoTracks[0].clips.length != 1) return false;
@@ -366,8 +403,14 @@ function addPreviewMarkers(segmentsStr, clipStart) {
                 segEnd   = parseFloat(seg.end   || seg[1]);
             }
 
-            var markerTime = clipStart + segStart;
-            var markerEnd  = clipStart + segEnd;
+            // Python already adds the clip START offset to the returned values.
+            // Do not add clipStart a second time here.
+            var markerTime = segStart;
+            var markerEnd  = segEnd;
+
+            if (isNaN(markerTime) || isNaN(markerEnd) || markerEnd <= markerTime) {
+                continue;
+            }
 
             var marker = seq.markers.createMarker(markerTime);
             marker.name     = "SILENCE_" + i;

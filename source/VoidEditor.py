@@ -2,30 +2,40 @@
 # Void Editor — SilenceCut
 # Author: Aktuğ Antika
 # ─────────────────────────────────────────────────────────────────
-from pydub import AudioSegment, silence
-from pydub import AudioSegment, silence
-
-# PyInstaller ile derlendiyse ffmpeg'i bin/ klasöründen al
-if getattr(sys, 'frozen', False):
-    _base = os.path.dirname(sys.executable)
-    _ffmpeg  = os.path.join(_base, 'bin', 'ffmpeg.exe')
-    _ffprobe = os.path.join(_base, 'bin', 'ffprobe.exe')
-    if os.path.exists(_ffmpeg):
-        AudioSegment.converter = _ffmpeg
-        AudioSegment.ffmpeg    = _ffmpeg
-        AudioSegment.ffprobe   = _ffprobe
-
 import argparse
 import os
 import json
 import sys
 import logging
 
+# Kaynak veya PyInstaller modunda, eklentinin yanındaki bin klasörünü kullan.
+_base = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    _base = os.path.dirname(sys.executable)
+
+_ffmpeg = os.path.join(_base, 'bin', 'ffmpeg.exe')
+_ffprobe = os.path.join(_base, 'bin', 'ffprobe.exe')
+
+# pydub import edilirken de FFmpeg'i bulabilsin; CEP PATH'ine güvenme.
+_bin_dir = os.path.join(_base, 'bin')
+if os.path.isdir(_bin_dir):
+    os.environ['PATH'] = _bin_dir + os.pathsep + os.environ.get('PATH', '')
+
+from pydub import AudioSegment, silence
+
+if os.path.exists(_ffmpeg):
+    AudioSegment.converter = _ffmpeg
+    AudioSegment.ffmpeg = _ffmpeg
+    AudioSegment.ffprobe = _ffprobe
+
 log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s (Line: %(lineno)d)'
 logging.basicConfig(filename='silencecut.log', format=log_format)
 logging.getLogger().setLevel(logging.DEBUG)
 
 logging.debug("Running Python executable.")
+logging.debug("Python executable: %s", sys.executable)
+logging.debug("FFmpeg path: %s (exists=%s)", _ffmpeg, os.path.exists(_ffmpeg))
+logging.debug("FFprobe path: %s (exists=%s)", _ffprobe, os.path.exists(_ffprobe))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("path")

@@ -12,13 +12,13 @@ let operating_system = getOS();
 initFrontend();
 init();
 
-var EXE_NAME = "";
-if (operating_system == "WIN") {
-  EXE_NAME = "VoidEditor.exe";
-} else {
-  EXE_NAME = "VoidEditor";
-}
-var EXE_PATH = path.join(path.normalize(csInterface.getSystemPath(SystemPath.EXTENSION)), "/source/" + EXE_NAME);
+// Development mode: run the Python source directly instead of the bundled EXE.
+var PYTHON_PATH = "C:\\Users\\enesa\\.cline\\data\\workspaces\\chat\\silencecut-build\\venv\\Scripts\\python.exe";
+var PYTHON_SCRIPT = path.join(
+  path.normalize(csInterface.getSystemPath(SystemPath.EXTENSION)),
+  "source",
+  "VoidEditor.py"
+);
 
 async function init() {
   operating_system = await getOS();
@@ -52,7 +52,7 @@ async function runSilenceCut() {
       const info = clipInfos[ci];
       const params = JSON.stringify({ silenceCutoff: baseParams.silenceCutoff, removeOver: baseParams.removeOver, keepOver: baseParams.keepOver, padding: baseParams.padding, "in": info["in"], "out": info["out"], "start": info.start });
       try {
-        const data = JSON.parse(await asyncCallPythonJumpcut(EXE_PATH, info.path, params));
+        const data = JSON.parse(await asyncCallPythonJumpcut(PYTHON_PATH, info.path, params));
         if (data.silences && data.silences.length > 0) allSilences.push(data.silences.slice(0, -1));
       } catch(e) { console.warn("Clip analiz hatası: " + e); }
     }
@@ -74,7 +74,7 @@ async function runSilenceCut() {
       const info = clipInfos[ci];
       const params = JSON.stringify({ silenceCutoff: baseParams.silenceCutoff, removeOver: baseParams.removeOver, keepOver: baseParams.keepOver, padding: baseParams.padding, "in": info["in"], "out": info["out"], "start": info.start });
       try {
-        const data = JSON.parse(await asyncCallPythonJumpcut(EXE_PATH, info.path, params));
+        const data = JSON.parse(await asyncCallPythonJumpcut(PYTHON_PATH, info.path, params));
         if (data.silences && data.silences.length > 0) allSilences.push(data.silences.slice(0, -1));
       } catch(e) { console.warn("Audio clip analiz hatası: " + e); }
     }
@@ -94,7 +94,7 @@ async function runSilenceCut() {
     silencecutParams["start"] = inoutpoints["start"];
     silencecutParams = JSON.stringify(silencecutParams);
     let silencecutData = "";
-    try { silencecutData = await asyncCallPythonJumpcut(EXE_PATH, mediaPath, silencecutParams); }
+      try { silencecutData = await asyncCallPythonJumpcut(PYTHON_PATH, mediaPath, silencecutParams); }
     catch (error) { alert("Failure executing Python script: " + error); return; }
     let dataJSON = "";
     try { dataJSON = JSON.parse(silencecutData); }
@@ -148,7 +148,7 @@ async function runGeneratePreview() {
         const info = clipInfos[ci];
         const params = JSON.stringify({ silenceCutoff: baseParams.silenceCutoff, removeOver: baseParams.removeOver, keepOver: baseParams.keepOver, padding: baseParams.padding, "in": info["in"], "out": info["out"], "start": info.start, preview: true });
         try {
-          const data = JSON.parse(await asyncCallPythonPreview(EXE_PATH, info.path, params));
+        const data = JSON.parse(await asyncCallPythonPreview(PYTHON_PATH, info.path, params));
           if (data.silences && data.silences.length > 0) allSilences.push(data.silences);
           if (data.total_duration) totalDur += data.total_duration;
           if (data.waveform && data.waveform.length > 0) {
@@ -196,7 +196,7 @@ async function runGeneratePreview() {
       const inout = JSON.parse(await asyncGetInOutStartPoints());
       const silencecutParamsRaw = JSON.parse(getJumpcutParams());
       const previewParams = JSON.stringify({ silenceCutoff: silencecutParamsRaw.silenceCutoff, removeOver: silencecutParamsRaw.removeOver, keepOver: silencecutParamsRaw.keepOver, padding: silencecutParamsRaw.padding, "in": inout["in"], "out": inout["out"], "start": inout["start"], preview: true });
-      const rawOutput = await asyncCallPythonPreview(EXE_PATH, mediaPath, previewParams);
+      const rawOutput = await asyncCallPythonPreview(PYTHON_PATH, mediaPath, previewParams);
       let data;
       try { data = JSON.parse(rawOutput); }
       catch(e) { setPreviewStatus("❌ Could not parse Python output: " + rawOutput.substring(0, 100), "error"); btnGenerate.disabled = false; return; }
@@ -222,8 +222,9 @@ async function runGeneratePreview() {
     const clipStart   = clipStartForMarkers;
 
     await new Promise((resolve, reject) => {
+      const markerScript = "addPreviewMarkers(" + JSON.stringify(segmentsStr) + ", 0)";
       csInterface.evalScript(
-        `addPreviewMarkers('${segmentsStr}', ${clipStart})`,
+        markerScript,
         (result) => {
           try {
             const r = JSON.parse(result);
@@ -488,26 +489,33 @@ async function runClearPreviewMarkers() {
 // ─────────────────────────────────────────────────────────────────
 // Python preview runner
 // ─────────────────────────────────────────────────────────────────
-async function asyncCallPythonPreview(exe_path, media_path, previewParams) {
+async function asyncCallPythonPreview(python_path, media_path, previewParams) {
   return new Promise((resolve, reject) => {
-    exe_path   = path.normalize(exe_path);
+    python_path = path.normalize(python_path);
     media_path = path.normalize(media_path);
-    const cwd  = path.dirname(exe_path);
+    const cwd = path.dirname(PYTHON_SCRIPT);
 
     let command_prompt;
     try {
-      command_prompt = child_process.spawn(exe_path, [media_path, previewParams], { cwd });
+      command_prompt = child_process.spawn(python_path, [PYTHON_SCRIPT, media_path, previewParams], { cwd, windowsHide: true });
     } catch(error) {
       reject(error);
       return;
     }
 
     let outputData = "";
+    let errorData = "";
+    let settled = false;
     command_prompt.stdout.on('data', (data) => { outputData += data.toString(); });
-    command_prompt.stderr.on('data', (data) => { reject(data.toString()); });
-    command_prompt.on('exit', (code) => {
+    command_prompt.stderr.on('data', (data) => { errorData += data.toString(); });
+    command_prompt.on('error', (error) => {
+      if (!settled) { settled = true; reject(error); }
+    });
+    command_prompt.on('close', (code) => {
+      if (settled) return;
+      settled = true;
       if (code === 0) resolve(outputData);
-      else reject(`Process exited with code ${code}`);
+      else reject(errorData.trim() || `Process exited with code ${code}`);
     });
   });
 }
@@ -580,7 +588,13 @@ async function asyncGetInOutStartPoints() {
 async function asyncGetAllTracksClipInfo() {
   return new Promise((resolve, reject) => {
     csInterface.evalScript("getAllTracksClipInfo()", (result) => {
-      if (result) resolve(result);
+      if (result && result.indexOf("EvalScript error") !== 0) {
+        try {
+          const parsed = JSON.parse(result);
+          if (parsed && parsed.error) reject(parsed.error);
+          else resolve(result);
+        } catch (e) { reject("Invalid clip info response: " + result); }
+      }
       else reject("Error getting all tracks clip info.");
     });
   });
@@ -590,7 +604,13 @@ async function asyncGetAllTracksClipInfo() {
 async function asyncGetAllAudioClipInfo() {
   return new Promise((resolve, reject) => {
     csInterface.evalScript("getAllAudioClipInfo()", (result) => {
-      if (result) resolve(result);
+      if (result && result.indexOf("EvalScript error") !== 0) {
+        try {
+          const parsed = JSON.parse(result);
+          if (parsed && parsed.error) reject(parsed.error);
+          else resolve(result);
+        } catch (e) { reject("Invalid audio clip info response: " + result); }
+      }
       else reject("Error getting audio clip info.");
     });
   });
@@ -631,25 +651,33 @@ function mergeWaveforms(clipDatas, totalDuration, targetBars) {
   return { waveform, silenceMask };
 }
 
-async function asyncCallPythonJumpcut(exe_path, media_path, silencecutParams) {
+async function asyncCallPythonJumpcut(python_path, media_path, silencecutParams) {
   return new Promise((resolve, reject) => {
-    exe_path   = path.normalize(exe_path);
+    python_path = path.normalize(python_path);
     media_path = path.normalize(media_path);
-    let cwd    = path.dirname(exe_path);
+    let cwd = path.dirname(PYTHON_SCRIPT);
 
     let command_prompt;
     try {
-      command_prompt = child_process.spawn(exe_path, [media_path, silencecutParams], { cwd });
+      command_prompt = child_process.spawn(python_path, [PYTHON_SCRIPT, media_path, silencecutParams], { cwd, windowsHide: true });
     } catch (error) {
-      alert(error);
+      reject(error);
+      return;
     }
 
     let outputData = "";
+    let errorData = "";
+    let settled = false;
     command_prompt.stdout.on('data', (data) => { outputData += data.toString(); });
-    command_prompt.stderr.on('data', (data) => { reject(data.toString()); });
-    command_prompt.on('exit', (code) => {
+    command_prompt.stderr.on('data', (data) => { errorData += data.toString(); });
+    command_prompt.on('error', (error) => {
+      if (!settled) { settled = true; reject(error); }
+    });
+    command_prompt.on('close', (code) => {
+      if (settled) return;
+      settled = true;
       if (code === 0) resolve(outputData);
-      else reject(`Process exited with code ${code}`);
+      else reject(errorData.trim() || `Process exited with code ${code}`);
     });
   });
 }
@@ -875,7 +903,7 @@ async function runAutoDetect() {
       auto_detect:   true
     });
 
-    const rawOutput = await asyncCallPythonPreview(EXE_PATH, mediaPath, params);
+    const rawOutput = await asyncCallPythonPreview(PYTHON_PATH, mediaPath, params);
 
     let data;
     try {
