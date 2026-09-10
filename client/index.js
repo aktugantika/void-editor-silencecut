@@ -35,7 +35,7 @@ function resolvePythonPath() {
   }
 
   // 2. Öncelik: Eklenti klasörünün içinde gömülü (embedded) python klasörü
-  const embeddedPython = path.join(EXTENSION_PATH, "bin", "python", isWin ? "python.exe" : "python");
+  const embeddedPython = path.join(EXTENSION_PATH, "source", "bin", "python", isWin ? "python.exe" : "python");
   if (fs.existsSync(embeddedPython)) {
     return embeddedPython;
   }
