@@ -13,12 +13,38 @@ initFrontend();
 init();
 
 // Development mode: run the Python source directly instead of the bundled EXE.
-var PYTHON_PATH = "C:\\Users\\enesa\\.cline\\data\\workspaces\\chat\\silencecut-build\\venv\\Scripts\\python.exe";
-var PYTHON_SCRIPT = path.join(
-  path.normalize(csInterface.getSystemPath(SystemPath.EXTENSION)),
-  "source",
-  "VoidEditor.py"
-);
+// Eklentinin kurulu olduğu kök dizin
+const EXTENSION_PATH = path.normalize(csInterface.getSystemPath(SystemPath.EXTENSION));
+
+// Python script yolu
+var PYTHON_SCRIPT = path.join(EXTENSION_PATH, "source", "VoidEditor.py");
+
+/**
+ * Kullanılabilir Python yolunu dinamik olarak tespit eder.
+ */
+function resolvePythonPath() {
+  const isWin = process.platform === "win32" || operating_system === "WIN";
+
+  // 1. Öncelik: Eklenti klasörünün içindeki sanal ortam (venv)
+  const localVenvPython = isWin
+    ? path.join(EXTENSION_PATH, "venv", "Scripts", "python.exe")
+    : path.join(EXTENSION_PATH, "venv", "bin", "python");
+
+  if (fs.existsSync(localVenvPython)) {
+    return localVenvPython;
+  }
+
+  // 2. Öncelik: Eklenti klasörünün içinde gömülü (embedded) python klasörü
+  const embeddedPython = path.join(EXTENSION_PATH, "bin", "python", isWin ? "python.exe" : "python");
+  if (fs.existsSync(embeddedPython)) {
+    return embeddedPython;
+  }
+
+  // 3. Öncelik: Sistemdeki varsayılan Python (PATH ortam değişkeninden okur)
+  return isWin ? "python" : "python3";
+}
+
+var PYTHON_PATH = resolvePythonPath();
 
 async function init() {
   operating_system = await getOS();
@@ -222,7 +248,8 @@ async function runGeneratePreview() {
     const clipStart   = clipStartForMarkers;
 
     await new Promise((resolve, reject) => {
-      const markerScript = "addPreviewMarkers(" + JSON.stringify(segmentsStr) + ", 0)";
+      const escapedSegments = JSON.stringify(segmentsStr).replace(/\\/g, "\\\\");
+      const markerScript = "addPreviewMarkers(" + escapedSegments + ", 0)";
       csInterface.evalScript(
         markerScript,
         (result) => {
